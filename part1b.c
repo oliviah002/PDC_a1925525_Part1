@@ -132,6 +132,11 @@ void part1a_function(vect_t pos[], int loc_n, MPI_Datatype vect_mpi_t, MPI_Comm 
   free(send_buffer);
 };
 
+typedef struct {
+  double mass;
+  vect_t pos;
+} body_type;
+
 void part1b_function() {};
 
 
@@ -146,11 +151,14 @@ int main(int argc, char* argv[]) {
   int output_freq;    /* Frequency of output        */
   double delta_t;     /* Size of timestep           */
   double t;           /* Current Time               */
-  double* masses;     /* All the masses             */
+  //double* masses;     /* All the masses             */
+  double* loc_masses;
   vect_t* loc_pos;    /* Positions of my particles  */
-  vect_t* pos;        /* Positions of all particles */
+  //vect_t* pos;        /* Positions of all particles */
   vect_t* loc_vel;    /* Velocities of my particles */
   vect_t* loc_forces; /* Forces on my particles     */
+
+  body_type* loc_bodies;
 
   char g_i;             /*_G_en or _i_nput init conds */
   double start, finish; /* For timings                */
@@ -162,19 +170,22 @@ int main(int argc, char* argv[]) {
 
   Get_args(argc, argv, &n, &n_steps, &delta_t, &output_freq, &g_i);
   loc_n = n / comm_sz; /* n should be evenly divisible by comm_sz */
-  masses = malloc(n * sizeof(double));
-  pos = malloc(n * sizeof(vect_t));
+  //masses = malloc(n * sizeof(double));
+  loc_masses = malloc(n * sizeof(double));
+  //pos = malloc(n * sizeof(vect_t));
   loc_forces = malloc(loc_n * sizeof(vect_t));
   loc_pos = pos + my_rank * loc_n;
   loc_vel = malloc(loc_n * sizeof(vect_t));
+  loc_bodies = malloc(loc_n * sizeof(body_type));
+
   if (my_rank == 0) vel = malloc(n * sizeof(vect_t));
   MPI_Type_contiguous(DIM, MPI_DOUBLE, &vect_mpi_t);
   MPI_Type_commit(&vect_mpi_t);
 
   if (g_i == 'i')
-    Get_init_cond(masses, pos, loc_vel, n, loc_n);
+    Get_init_cond(loc_masses, loc_pos, loc_vel, n, loc_n);
   else
-    Gen_init_cond(masses, pos, loc_vel, n, loc_n);
+    Gen_init_cond(loc_masses, loc_pos, loc_vel, n, loc_n);
 
   start = MPI_Wtime();
 #ifndef NO_OUTPUT
