@@ -1,3 +1,4 @@
+---------------------PART 1 A ----------------------------------------------------------------------------------------------------------
 INFORMATION ABOUT THE ASSIGNMENT:
 •	Define the neighbouring ranks using next = (my_rank + 1) % comm_sz and previous = (my_rank - 1 + comm_sz) % comm_sz.
 •	Begin each ring pass with the updated position block currently owned by the process.
@@ -16,9 +17,11 @@ Plan:
 1. Remove the timestep use of MPI_Allgather.
 2. Define the neighbouring ranks using next = (my_rank + 1) % comm_sz and previous = (my_rank - 1 + comm_sz) % comm_sz.
 3. Use point-to-point communication and avoid deadlock (by using MPI_Sendrecv)
-4. Create pointers to send_buffer and recieve_buffer, and calculate current offset
+4. Create pointer to send_buffer, allocating space, and calculatre current offset
 5. Check if comm_sz <=1 and if true, return, as noone to communcite with if only one processor lol
 6. init. send buffer with updated coordinates of current process, allowing for buffer
 7. for loop for communication "pass", from 1 -> (comm_sz - 1)
 8. FREEEEEE pointer memory to not have memory leaks
 9. TEST!!!!
+
+----------------- PART 1 B --------------------------------------

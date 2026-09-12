@@ -1,1 +1,39 @@
-Hello
+Hello! Thank you for taking the time to mark my assignment!
+
+Some important information for you!
+Name: Olivia Harwood
+Student ID: a1925525
+Email: a1925525@adelaide.edu.au
+
+Now the more fun important stuff! How to compile!!
+
+My repository can be found at the following link:
+https://github.com/oliviah002/PDC_a1925525_Part1
+
+I have invited all 3 required instructors to this link.
+
+Below is information for part1a.c:
+
+----------------------------------------------------------
+File:     part1a.c
+
+Purpose:  Implement a 2-dimensional n-body solver that    uses the basic algorithm.  This version uses an explicit ring communication pattern that uses point-to-point MPI communication, in place of MPI_Allgather.
+
+Compile:  mpicc -g -Wall -o part1a part1a.c -lm
+To turn off output (e.g., when timing), define NO_OUTPUT
+To get verbose output, define DEBUG
+
+Run:  mpiexec -n <number of processes> ./part1a
+ <number of particles> <number of timesteps>  <size of timestep>  <output frequency> <g|i>
+'g': generate initial conditions using a random number
+generator
+'i': read initial conditions from stdin
+number of particles should be evenly divisible by the number of MPI processes
+A stepsize of 0.01 seems to work well with automatically
+generated data.
+
+Input:    If 'g' is specified on the command line, none.
+If 'i', mass, initial position and initial velocity of
+each particle
+Output:   If the output frequency is k, then position and velocity of each particle at every kth timestep.  This value is ignored (but still necessary) if NO_OUTPUT is defined
+----------------------------------------------------------
