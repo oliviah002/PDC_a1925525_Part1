@@ -137,7 +137,8 @@ typedef struct {
   vect_t pos;
 } body_type;
 
-void part1b_function() {};
+void part1b_function(body_type loc_bodies, vect_t loc_forces,vect_t loc_n, MPI_Datatype body_mpi_t, MPI_Comm comm) {};
+
 
 
 
@@ -189,12 +190,14 @@ int main(int argc, char* argv[]) {
 
   start = MPI_Wtime();
 #ifndef NO_OUTPUT
-  Output_state(0.0, masses, pos, loc_vel, n, loc_n);
+  Output_state(0.0, loc_masses, loc_pos, loc_vel, n, loc_n);
 #endif
   for (step = 1; step <= n_steps; step++) {
     t = step * delta_t;
-    for (loc_part = 0; loc_part < loc_n; loc_part++)
-      Compute_force(loc_part, masses, loc_forces, pos, n, loc_n);
+    for (loc_part = 0; loc_part < loc_n; loc_part++) {
+      //Compute_force(loc_part, masses, loc_forces, pos, n, loc_n);
+    }
+    part1b_function(loc_bodies_loc_forces, loc_n, body_mpi_t, comm);
     for (loc_part = 0; loc_part < loc_n; loc_part++)
       Update_part(loc_part, masses, loc_forces, loc_pos, loc_vel, n, loc_n,
                   delta_t);
