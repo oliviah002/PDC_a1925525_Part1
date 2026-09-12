@@ -100,21 +100,36 @@ void Update_part(int loc_part, double masses[], vect_t loc_forces[],
                  double delta_t);
 
 void part1a_function(vect_t pos[], int loc_n, MPI_Datatype vect_mpi_t, MPI_Comm comm) {
-  if (comm_sz <= 1) {
-    return; /*no communication required if theres only one processor*/
+  if (comm_sz == 1) {
+    return; /*no communication required if theres only one process*/
   }
   int next = (my_rank + 1) % comm_sz;
   int previous = (my_rank - 1 + comm_sz) % comm_sz;
 
   vect_t* send_buffer = malloc(loc_n * sizeof(vect_t));
-  vect_t* recieve_buffer = malloc(loc_n * sizeof(vect_t));
-  int my_offset = my_rank * loc_n;
+  int processor_offset = my_rank * loc_n;
 
   /*Initialise send_buffer with current process's data at this instant */
   for (int i = 0; i < loc_n; i++) {
-    send_buffer[i][X] = pos[my_offset + i][X];
-    send_buffer[i][Y] = pos[my_offset + i][Y];
+    send_buffer[i][X] = pos[processor_offset + i][X];
+    send_buffer[i][Y] = pos[processor_offset + i][Y];
   }
+
+  for (int ring_pass = 1; ring_pass < comm_sz; ring_pass++) {
+
+    //calculate which rank used to own this block
+    int old_owner = (my_rank - ring_pass + comm_sz) % comm_sz;
+    int old_offset = old_owner * loc_n;
+
+    MPI_Sendrecv(send_buffer, loc_n, vect_mpi_t, next, 0, &pos[old_offset], loc_n, vect_mpi_t, previous, 0, comm, MPI_STATUS_IGNORE);
+
+    for (int i = 0; i < loc_n; i++) {
+      send_buffer[i][X] = pos[i + old_offset][X];
+      send_buffer[i][Y] = pos[i + old_offset][Y];
+    }
+  }
+  
+  free(send_buffer);
 };
 
 
