@@ -362,25 +362,37 @@ void Gen_init_cond(double masses[], vect_t pos[], vect_t loc_vel[], int n,
   double mass = 5.0e24;
   double gap = 1.0e5;
   double speed = 3.0e4;
+      double* mass_array = malloc(n * sizeof(double));
+    vect_t* pos_array = malloc(n * sizeof(vect_t));
+    vect_t* vel_array = malloc(n * sizeof(vect_t));
+
 
   if (my_rank == 0) {
+    
     //    srandom(1);
     for (part = 0; part < n; part++) {
-      masses[part] = mass;
-      pos[part][X] = part * gap;
-      pos[part][Y] = 0.0;
-      vel[part][X] = 0.0;
+      mass_array[part] = mass;
+      pos_array[part][X] = part * gap;
+      pos_array[part][Y] = 0.0;
+      vel_array[part][X] = 0.0;
       //       if (random()/((double) RAND_MAX) >= 0.5)
       if (part % 2 == 0)
-        vel[part][Y] = speed;
+        vel_array[part][Y] = speed;
       else
-        vel[part][Y] = -speed;
+        vel_array[part][Y] = -speed;
     }
+
   }
 
-  MPI_Bcast(masses, n, MPI_DOUBLE, 0, comm);
-  MPI_Bcast(pos, n, vect_mpi_t, 0, comm);
-  MPI_Scatter(vel, loc_n, vect_mpi_t, loc_vel, loc_n, vect_mpi_t, 0, comm);
+  //MPI_Bcast(masses, n, MPI_DOUBLE, 0, comm);
+  MPI_Scatter(mass_array, loc_n, MPI_DOUBLE, masses, loc_n, vect_mpi_t, 0, comm);
+  //MPI_Bcast(pos, n, vect_mpi_t, 0, comm);
+  MPI_Scatter(pos_array, loc_n, vect_mpi_t, pos, loc_n, vect_mpi_t, 0, comm);
+  MPI_Scatter(vel_array, loc_n, vect_mpi_t, loc_vel, loc_n, vect_mpi_t, 0, comm);
+free(mass_array);
+  free(pos_array);
+  free(vel_array);
+
 } /* Gen_init_cond */
 
 /*---------------------------------------------------------------------
