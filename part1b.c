@@ -99,7 +99,7 @@ void Update_part(int loc_part, double masses[], vect_t loc_forces[],
                  vect_t loc_pos[], vect_t loc_vel[], int n, int loc_n,
                  double delta_t);
 
-void part1a_function(vect_t pos[], int loc_n, MPI_Datatype vect_mpi_t, MPI_Comm comm) {
+void part1b_function(vect_t pos[], int loc_n, MPI_Datatype vect_mpi_t, MPI_Comm comm, double loc_masses, vect_t loc_forces, vect_t loc_vel) {
   if (comm_sz == 1) {
     return; /*no communication required if theres only one process*/
   }
@@ -113,6 +113,9 @@ void part1a_function(vect_t pos[], int loc_n, MPI_Datatype vect_mpi_t, MPI_Comm 
   for (int i = 0; i < loc_n; i++) {
     send_buffer[i][X] = pos[processor_offset + i][X];
     send_buffer[i][Y] = pos[processor_offset + i][Y];
+
+    send_buffer[i][X] = loc_masses[processor_offset + i][X];
+    send_buffer[i][Y] = loc_masses[processor_offset + i][Y];
   }
 
   for (int ring_pass = 1; ring_pass < comm_sz; ring_pass++) {
@@ -126,6 +129,9 @@ void part1a_function(vect_t pos[], int loc_n, MPI_Datatype vect_mpi_t, MPI_Comm 
     for (int i = 0; i < loc_n; i++) {
       send_buffer[i][X] = pos[i + old_offset][X];
       send_buffer[i][Y] = pos[i + old_offset][Y];
+          send_buffer[i][X] = loc_masses[i + old_offset][X];
+    send_buffer[i][Y] = loc_masses[i+old_offset][Y];
+
     }
   }
 
@@ -137,7 +143,7 @@ typedef struct {
   vect_t pos;
 } body_type;
 
-void part1b_function(body_type loc_bodies, vect_t loc_forces,vect_t loc_n, MPI_Datatype body_mpi_t, MPI_Comm comm) {};
+
 
 
 
@@ -197,14 +203,16 @@ int main(int argc, char* argv[]) {
     for (loc_part = 0; loc_part < loc_n; loc_part++) {
       //Compute_force(loc_part, masses, loc_forces, pos, n, loc_n);
     }
-    part1b_function(loc_bodies_loc_forces, loc_n, body_mpi_t, comm);
+
     for (loc_part = 0; loc_part < loc_n; loc_part++)
       Update_part(loc_part, masses, loc_forces, loc_pos, loc_vel, n, loc_n,
                   delta_t);
 
+    part1b_function(loc_pos, loc_n, vect_mpi_t, comm, loc_masses, loc_forces, loc_vel);
+
+
     /*MPI_Allgather(MPI_IN_PLACE, loc_n, vect_mpi_t,
                   pos, loc_n, vect_mpi_t, comm);*/
-    part1a_function(pos, loc_n, vect_mpi_t, comm);
 
 #ifndef NO_OUTPUT
     if (step % output_freq == 0)
