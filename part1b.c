@@ -99,7 +99,7 @@ void Update_part(int loc_part, double masses[], vect_t loc_forces[],
                  vect_t loc_pos[], vect_t loc_vel[], int n, int loc_n,
                  double delta_t);
 
-void part1b_function(vect_t pos[], int loc_n, MPI_Datatype vect_mpi_t, MPI_Comm comm, double loc_masses, vect_t loc_forces, vect_t loc_vel) {
+void part1b_function(vect_t pos[], int loc_n, MPI_Datatype vect_mpi_t, MPI_Comm comm, double loc_masses[], vect_t loc_forces[], vect_t loc_vel[]) {
   if (comm_sz == 1) {
     return; /*no communication required if theres only one process*/
   }
@@ -113,9 +113,6 @@ void part1b_function(vect_t pos[], int loc_n, MPI_Datatype vect_mpi_t, MPI_Comm 
   for (int i = 0; i < loc_n; i++) {
     send_buffer[i][X] = pos[processor_offset + i][X];
     send_buffer[i][Y] = pos[processor_offset + i][Y];
-
-    send_buffer[i][X] = loc_masses[processor_offset + i][X];
-    send_buffer[i][Y] = loc_masses[processor_offset + i][Y];
   }
 
   for (int ring_pass = 1; ring_pass < comm_sz; ring_pass++) {
@@ -129,9 +126,6 @@ void part1b_function(vect_t pos[], int loc_n, MPI_Datatype vect_mpi_t, MPI_Comm 
     for (int i = 0; i < loc_n; i++) {
       send_buffer[i][X] = pos[i + old_offset][X];
       send_buffer[i][Y] = pos[i + old_offset][Y];
-          send_buffer[i][X] = loc_masses[i + old_offset][X];
-    send_buffer[i][Y] = loc_masses[i+old_offset][Y];
-
     }
   }
 
@@ -178,10 +172,10 @@ int main(int argc, char* argv[]) {
   Get_args(argc, argv, &n, &n_steps, &delta_t, &output_freq, &g_i);
   loc_n = n / comm_sz; /* n should be evenly divisible by comm_sz */
   //masses = malloc(n * sizeof(double));
-  loc_masses = malloc(n * sizeof(double));
+  loc_masses = malloc(loc_n * sizeof(double));
   //pos = malloc(n * sizeof(vect_t));
   loc_forces = malloc(loc_n * sizeof(vect_t));
-  loc_pos = pos + my_rank * loc_n;
+  loc_pos = malloc(loc_n * sizeof(vect_t));
   loc_vel = malloc(loc_n * sizeof(vect_t));
   loc_bodies = malloc(loc_n * sizeof(body_type));
 
@@ -205,7 +199,7 @@ int main(int argc, char* argv[]) {
     }
 
     for (loc_part = 0; loc_part < loc_n; loc_part++)
-      Update_part(loc_part, masses, loc_forces, loc_pos, loc_vel, n, loc_n,
+      Update_part(loc_part, loc_masses, loc_forces, loc_pos, loc_vel, n, loc_n,
                   delta_t);
 
     part1b_function(loc_pos, loc_n, vect_mpi_t, comm, loc_masses, loc_forces, loc_vel);
@@ -216,7 +210,7 @@ int main(int argc, char* argv[]) {
 
 #ifndef NO_OUTPUT
     if (step % output_freq == 0)
-      Output_state(t, masses, pos, loc_vel, n, loc_n);
+      Output_state(t, loc_masses, loc_pos, loc_vel, loc_n, loc_n);
 #endif
   }
 
@@ -224,8 +218,8 @@ int main(int argc, char* argv[]) {
   if (my_rank == 0) printf("Elapsed time = %e seconds\n", finish - start);
 
   MPI_Type_free(&vect_mpi_t);
-  free(masses);
-  free(pos);
+  free(loc_masses);
+  free(loc_pos);
   free(loc_forces);
   free(loc_vel);
   if (my_rank == 0) free(vel);
