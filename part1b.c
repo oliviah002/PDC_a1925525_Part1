@@ -317,22 +317,34 @@ void Get_args(int argc, char* argv[], int* n_p, int* n_steps_p,
 void Get_init_cond(double masses[], vect_t pos[], vect_t loc_vel[], int n,
                    int loc_n) {
   int part;
+  double* mass_array = NULL;
+    vect_t* pos_array = NULL;
+    vect_t* vel_array = NULL;
 
   if (my_rank == 0) {
+    mass_array = malloc(n * sizeof(double));
+    pos_array = malloc(n * sizeof(vect_t));
+    vel_array = malloc(n * sizeof(vect_t));
     printf("For each particle, enter (in order):\n");
     printf("   its mass, its x-coord, its y-coord, ");
     printf("its x-velocity, its y-velocity\n");
     for (part = 0; part < n; part++) {
-      scanf("%lf", &masses[part]);
-      scanf("%lf", &pos[part][X]);
-      scanf("%lf", &pos[part][Y]);
-      scanf("%lf", &vel[part][X]);
-      scanf("%lf", &vel[part][Y]);
+      scanf("%lf", &mass_array[part]);
+      scanf("%lf", &pos_array[part][X]);
+      scanf("%lf", &pos_array[part][Y]);
+      scanf("%lf", &vel_array[part][X]);
+      scanf("%lf", &vel_array[part][Y]);
     }
   }
-  MPI_Bcast(masses, n, MPI_DOUBLE, 0, comm);
-  MPI_Bcast(pos, n, vect_mpi_t, 0, comm);
-  MPI_Scatter(vel, loc_n, vect_mpi_t, loc_vel, loc_n, vect_mpi_t, 0, comm);
+    //MPI_Bcast(masses, n, MPI_DOUBLE, 0, comm);
+  MPI_Scatter(mass_array, loc_n, MPI_DOUBLE, masses, loc_n, MPI_DOUBLE, 0, comm);
+  //MPI_Bcast(pos, n, vect_mpi_t, 0, comm);
+  MPI_Scatter(pos_array, loc_n, vect_mpi_t, pos, loc_n, vect_mpi_t, 0, comm);
+  MPI_Scatter(vel_array, loc_n, vect_mpi_t, loc_vel, loc_n, vect_mpi_t, 0, comm);
+free(mass_array);
+  free(pos_array);
+  free(vel_array);
+
 } /* Get_init_cond */
 
 /*---------------------------------------------------------------------
@@ -362,13 +374,16 @@ void Gen_init_cond(double masses[], vect_t pos[], vect_t loc_vel[], int n,
   double mass = 5.0e24;
   double gap = 1.0e5;
   double speed = 3.0e4;
-      double* mass_array = malloc(n * sizeof(double));
-    vect_t* pos_array = malloc(n * sizeof(vect_t));
-    vect_t* vel_array = malloc(n * sizeof(vect_t));
+      double* mass_array = NULL;
+    vect_t* pos_array = NULL;
+    vect_t* vel_array = NULL;
 
 
   if (my_rank == 0) {
-    
+    mass_array = malloc(n * sizeof(double));
+    pos_array = malloc(n * sizeof(vect_t));
+    vel_array = malloc(n * sizeof(vect_t));
+
     //    srandom(1);
     for (part = 0; part < n; part++) {
       mass_array[part] = mass;
@@ -385,7 +400,7 @@ void Gen_init_cond(double masses[], vect_t pos[], vect_t loc_vel[], int n,
   }
 
   //MPI_Bcast(masses, n, MPI_DOUBLE, 0, comm);
-  MPI_Scatter(mass_array, loc_n, MPI_DOUBLE, masses, loc_n, vect_mpi_t, 0, comm);
+  MPI_Scatter(mass_array, loc_n, MPI_DOUBLE, masses, loc_n, MPI_DOUBLE, 0, comm);
   //MPI_Bcast(pos, n, vect_mpi_t, 0, comm);
   MPI_Scatter(pos_array, loc_n, vect_mpi_t, pos, loc_n, vect_mpi_t, 0, comm);
   MPI_Scatter(vel_array, loc_n, vect_mpi_t, loc_vel, loc_n, vect_mpi_t, 0, comm);
