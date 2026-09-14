@@ -1,0 +1,12 @@
+
+part1b:25000 terminated with signal 11 at PC=766f6ee9ba1f SP=7ffc998e4840.  Backtrace:
+/lib/x86_64-linux-gnu/libmpich.so.12(+0x264a1f)[0x766f6ee9ba1f]
+/lib/x86_64-linux-gnu/libmpich.so.12(+0x2102aa)[0x766f6ee472aa]
+/lib/x86_64-linux-gnu/libmpich.so.12(+0x21208c)[0x766f6ee4908c]
+/lib/x86_64-linux-gnu/libmpich.so.12(+0x21356e)[0x766f6ee4a56e]
+/lib/x86_64-linux-gnu/libmpich.so.12(+0x21303a2)[0x766f70d673a2]
+/lib/x86_64-linux-gnu/libmpich.so.12(MPI_Init+0xde)[0x766f6ed1a7ee]
+./part1b(+0x194f)[0x5d758aae794f]
+/lib/x86_64-linux-gnu/libc.so.6(+0x29d90)[0x766f6ea37d90]
+/lib/x86_64-linux-gnu/libc.so.6(__libc_start_main+0x80)[0x766f6ea37e40]
+./part1b(+0x1385)[0x5d758aae7385]

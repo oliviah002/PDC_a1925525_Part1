@@ -99,43 +99,39 @@ void Update_part(int loc_part, double masses[], vect_t loc_forces[],
                  vect_t loc_pos[], vect_t loc_vel[], int n, int loc_n,
                  double delta_t);
 
-void part1b_function(vect_t pos[], int loc_n, MPI_Datatype vect_mpi_t, MPI_Comm comm, double loc_masses[], vect_t loc_forces[], vect_t loc_vel[]) {
-  if (comm_sz == 1) {
-    return; /*no communication required if theres only one process*/
-  }
-  int next = (my_rank + 1) % comm_sz;
-  int previous = (my_rank - 1 + comm_sz) % comm_sz;
-
-  vect_t* send_buffer = malloc(loc_n * sizeof(vect_t));
-  int processor_offset = my_rank * loc_n;
-
-  /*Initialise send_buffer with current process's data at this instant */
-  for (int i = 0; i < loc_n; i++) {
-    send_buffer[i][X] = pos[processor_offset + i][X];
-    send_buffer[i][Y] = pos[processor_offset + i][Y];
-  }
-
-  for (int ring_pass = 1; ring_pass < comm_sz; ring_pass++) {
-
-    //calculate which rank used to own this block
-    int old_owner = (my_rank - ring_pass + comm_sz) % comm_sz;
-    int old_offset = old_owner * loc_n;
-
-    MPI_Sendrecv(send_buffer, loc_n, vect_mpi_t, next, 0, &pos[old_offset], loc_n, vect_mpi_t, previous, 0, comm, MPI_STATUS_IGNORE);
-
-    for (int i = 0; i < loc_n; i++) {
-      send_buffer[i][X] = pos[i + old_offset][X];
-      send_buffer[i][Y] = pos[i + old_offset][Y];
-    }
-  }
-
-  free(send_buffer);
-};
-
 typedef struct {
   double mass;
   vect_t pos;
 } body_type;
+//Helper function for accumulating forces
+void Accumulate_forces(double loc_masses[], vect_t loc_pos[], vect_t loc_forces[], body_type buffer[], int loc_n, int self_interaction_check){
+  double mg;
+  vect_t f_part_k;
+  double len, len_3, fact;
+
+  for (int loc_part = 0; loc_part < loc_n; loc_part++) {
+    for (int k = 0; k < loc_n; k++) {
+      //checking if the force is "self inflicted"
+      if (self_interaction_check == 1 && k == loc_part) {
+        continue;
+      }
+      f_part_k[X] = loc_pos[loc_part][X] - buffer[k].pos [X];
+f_part_k[Y] = loc_pos[loc_part][Y] - buffer[k].pos [Y];
+len = sqrt(f_part_k[X] * f_part_k[X] + f_part_k[Y] * f_part_k[Y]);
+len_3 = len * len * len;
+mg = -G * loc_masses[loc_part] * buffer[k].mass;
+fact = mg / len_3;
+f_part_k[X] *= fact;
+f_part_k[Y] *= fact;
+loc_forces[loc_part][X] += f_part_k[X];
+loc_forces[loc_part][Y] += f_part_k[Y];
+    }
+  }
+}
+
+
+
+
 
 
 
@@ -194,15 +190,19 @@ int main(int argc, char* argv[]) {
 #endif
   for (step = 1; step <= n_steps; step++) {
     t = step * delta_t;
+    //create accumulator for forces, zerod
+
     for (loc_part = 0; loc_part < loc_n; loc_part++) {
       //Compute_force(loc_part, masses, loc_forces, pos, n, loc_n);
     }
 
-    for (loc_part = 0; loc_part < loc_n; loc_part++)
+    part1b_function(loc_pos, loc_n, vect_mpi_t, comm, loc_masses, loc_forces, loc_vel);
+
+    for (loc_part = 0; loc_part < loc_n; loc_part++) {
       Update_part(loc_part, loc_masses, loc_forces, loc_pos, loc_vel, n, loc_n,
                   delta_t);
+                }
 
-    part1b_function(loc_pos, loc_n, vect_mpi_t, comm, loc_masses, loc_forces, loc_vel);
 
 
     /*MPI_Allgather(MPI_IN_PLACE, loc_n, vect_mpi_t,
@@ -524,7 +524,7 @@ void Update_part(int loc_part, double masses[], vect_t loc_forces[],
   double fact;
 
   part = my_rank * loc_n + loc_part;
-  fact = delta_t / masses[part];
+  fact = delta_t / masses[loc_part];
 #ifdef DEBUG
   printf("Proc %d > Before update of %d:\n", my_rank, part);
   printf("   Position  = (%.3e, %.3e)\n", loc_pos[loc_part][X],
