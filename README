@@ -37,3 +37,40 @@ If 'i', mass, initial position and initial velocity of
 each particle
 Output:   If the output frequency is k, then position and velocity of each particle at every kth timestep.  This value is ignored (but still necessary) if NO_OUTPUT is defined
 ----------------------------------------------------------
+File:     part1b.c
+Purpose:  Implement a 2-dimensional n-body solver that uses the
+basic algorithm.  This version expands upon part1a, with each process storing the body data it owns.
+
+Compile:  mpicc -g -Wall -o part1b part1b.c -lm
+To turn off output (e.g., when timing), define NO_OUTPUT
+To get verbose output, define DEBUG
+Run: mpiexec -n <number of processes> ./part1b
+<number of particles> <number of timesteps>  <size of timestep> <output frequency> <g|i>
+'g': generate initial conditions using a random number generator
+'i': read initial conditions from stdin number of particles should be evenly divisible by the number
+of MPI processes
+A stepsize of 0.01 seems to work well with automatically generated data.
+
+ Input:    If 'g' is specified on the command line, none.
+If 'i', mass, initial position and initial velocity of
+each particle
+ Output:   If the output frequency is k, then position and velocity of
+each particle at every kth timestep.  This value is
+ignored (but still necessary) if NO_OUTPUT is defined
+-------------------------------------------------------------------------------------------------
+
+Here's an example:
+Compile Part 1A & 1B
+mpicc -g -Wall -o part1a part1a.c -lm
+mpicc -g -Wall -o part1b part1b.c -lm
+
+Run test with 4 processes, 100 particles, 10 steps, dt=0.01, output every 10 steps, generated data
+mpiexec -n 4 ./part1a 100 10 0.01 10 g
+mpiexec -n 4 ./part1b 100 10 0.01 10 g
+
+Example correctness check using diff
+mpiexec -n 4 ./mpi_nbody_basic 100 10 0.01 10 g > orig.out
+mpiexec -n 4 ./part1a 100 10 0.01 10 g > 1a.out
+diff orig.out 1a.out
+
+Thanks for reading this and happy marking :)
