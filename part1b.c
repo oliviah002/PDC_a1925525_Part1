@@ -145,12 +145,11 @@ void part1b_function(vect_t pos[], int loc_n, MPI_Datatype vect_mpi_t, MPI_Comm 
 
   body_type* send_buffer = malloc(loc_n * sizeof(body_type));
   body_type* receive_buffer = malloc(loc_n * sizeof(body_type));
-  int processor_offset = my_rank * loc_n;
 
   /*Initialise send_buffer with current process's data at this instant */
   for (int i = 0; i < loc_n; i++) {
-    send_buffer[i].pos[X] = pos[processor_offset + i][X];
-    send_buffer[i].pos[Y] = pos[processor_offset + i][Y];
+    send_buffer[i].pos[X] = pos[i][X];
+    send_buffer[i].pos[Y] = pos[i][Y];
     send_buffer[i].mass = loc_masses[i];
   }
   Accumulate_forces(loc_masses, pos, loc_forces, send_buffer, loc_n, 1);
@@ -173,6 +172,7 @@ void part1b_function(vect_t pos[], int loc_n, MPI_Datatype vect_mpi_t, MPI_Comm 
   }
 
   free(send_buffer);
+  free(receive_buffer);
 };
 
 
