@@ -80,6 +80,7 @@ const double G = 6.673e-11; /* Gravitational constant. */
 int my_rank, comm_sz;
 MPI_Comm comm;
 MPI_Datatype vect_mpi_t;
+MPI_Datatype body_mpi_t;
 
 /* Scratch array used by process 0 for global velocity I/O */
 vect_t* vel = NULL;
@@ -137,9 +138,7 @@ void part1b_function(vect_t pos[], int loc_n, MPI_Datatype vect_mpi_t, MPI_Comm 
     loc_forces[i][Y] = 0.0;
   }
 
-  if (comm_sz == 1) {
-    return; /*no communication required if theres only one process*/
-  }
+ 
   int next = (my_rank + 1) % comm_sz;
   int previous = (my_rank - 1 + comm_sz) % comm_sz;
 
@@ -161,7 +160,7 @@ void part1b_function(vect_t pos[], int loc_n, MPI_Datatype vect_mpi_t, MPI_Comm 
     int old_owner = (my_rank - ring_pass + comm_sz) % comm_sz;
     int old_offset = old_owner * loc_n;
 
-    MPI_Sendrecv(send_buffer, loc_n, vect_mpi_t, next, 0, receive_buffer, loc_n, vect_mpi_t, previous, 0, comm, MPI_STATUS_IGNORE);
+    MPI_Sendrecv(send_buffer, loc_n, body_mpi_t, next, 0, receive_buffer, loc_n, body_mpi_t, previous, 0, comm, MPI_STATUS_IGNORE);
     Accumulate_forces(loc_masses, pos, loc_forces, receive_buffer, loc_n, 0);
 
     for (int i = 0; i < loc_n; i++) {
@@ -220,6 +219,8 @@ int main(int argc, char* argv[]) {
   if (my_rank == 0) vel = malloc(n * sizeof(vect_t));
   MPI_Type_contiguous(DIM, MPI_DOUBLE, &vect_mpi_t);
   MPI_Type_commit(&vect_mpi_t);
+  MPI_Type_contiguous(3,MPI_DOUBLE,&body_mpi_t);
+  MPI_Type_commit(&body_mpi_t);
 
   if (g_i == 'i')
     Get_init_cond(loc_masses, loc_pos, loc_vel, n, loc_n);
@@ -252,7 +253,7 @@ int main(int argc, char* argv[]) {
 
 #ifndef NO_OUTPUT
     if (step % output_freq == 0)
-      Output_state(t, loc_masses, loc_pos, loc_vel, loc_n, loc_n);
+      Output_state(t, loc_masses, loc_pos, loc_vel, n, loc_n);
 #endif
   }
 
@@ -260,6 +261,7 @@ int main(int argc, char* argv[]) {
   if (my_rank == 0) printf("Elapsed time = %e seconds\n", finish - start);
 
   MPI_Type_free(&vect_mpi_t);
+  MPI_Type_free(&body_mpi_t);
   free(loc_masses);
   free(loc_pos);
   free(loc_forces);
@@ -463,23 +465,29 @@ free(mass_array);
  *    n:       total number of particles
  *    loc_n:   number of my particles
  */
+
 void Output_state(double time, double masses[], vect_t pos[], vect_t loc_vel[],
                   int n, int loc_n) {
   int part;
+  vect_t* out_pos = NULL;
+  if (my_rank == 0) {
+    out_pos = malloc(n* sizeof(vect_t));
+  }
 
+  MPI_Gather(pos, loc_n, vect_mpi_t, out_pos, loc_n, vect_mpi_t, 0, comm);
   MPI_Gather(loc_vel, loc_n, vect_mpi_t, vel, loc_n, vect_mpi_t, 0, comm);
   if (my_rank == 0) {
     printf("%.2f\n", time);
     for (part = 0; part < n; part++) {
-      //       printf("%.3f ", masses[part]);
-      printf("%3d %10.3e ", part, pos[part][X]);
-      printf("  %10.3e ", pos[part][Y]);
+      printf("%3d %10.3e ", part, out_pos[part][X]);
+      printf("  %10.3e ", out_pos[part][Y]);
       printf("  %10.3e ", vel[part][X]);
       printf("  %10.3e\n", vel[part][Y]);
     }
     printf("\n");
+    free(out_pos);
   }
-} /* Output_state */
+}
 
 /*---------------------------------------------------------------------
  * Function:       Compute_force
